@@ -150,7 +150,7 @@ A few basic hardware tools are required:
 
 Under REFERENCES below there is a link to the CB2S datasheet.
 
-Unfortunately, in this case it is necessary to desolder the CB2S module from the device because some of the components connected to the RX1 and/or TX1 pins make it impossible to read or write the firmware. With patience, some flux and desoldering wick it is possible to desolder it.
+Unfortunately, in this case, some of the components connected to the RX1 and/or TX1 pins make it impossible to read or write the firmware. I did not find a way to flash without removing the CB2S module from the main board. With patience, some flux and desoldering wick it is possible to desolder it.
 
 Another problem that I encountered was that the silkscreen on my CB2S was wrong, the pins where labeled "3V3","GND","RX2","TX1","P24","P26" from right to left, they should be labelled in that order but from left to right. This cost me a few hours of head banging till I noticed in the datasheet that the order was inverted, then I followed the output of the AMS117 regulator with the multitester and to my surprise I corroborated the error in the silkscreen. Later I found a couple of references to this problem on the Internet.
  
