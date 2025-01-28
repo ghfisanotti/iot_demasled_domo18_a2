@@ -1,20 +1,14 @@
-# Flashing ESPhome to a Beken/Tuya CB2S powered smart switch
+# Flashing ESPHome to a Beken/Tuya CB2S-Powered Smart Switch
 
-This is a WiFi Switch powered by a Tuya/Beken CB2S module with a BK7231N MCU sold in my country under the brand Demasled, model DOMO-18-A2
+This WiFi switch is powered by a Tuya/Beken CB2S module with a BK7231N MCU. It is sold in my country under the brand **Demasled**, model **DOMO-18-A2**, and is used with the **Tuya app** on Android.
 
-It's used with the Tuya app installed in Android.
+Before any hardware hacking, it is recommended to configure the device using the Tuya app to ensure everything is functioning correctly.
 
-Before any hardware hacking, it is convenient to configure this device using the Tuya app and verify that wverything is in order.
+## Hacking It for Local Use with Home Assistant
 
-## Hacking it to be used locally with HomeAssistant
+While it is possible to integrate Tuya devices with Home Assistant via the cloud, I prefer a local integration. To achieve this, I replaced the CB2S firmware with **ESPHome**. This process required reverse-engineering the connections for the relay, button, and LED.
 
-Although it is possible to somewhat integrate Tuya devices in the cloud with HomeAssistant, 
-I prefer a local integration, in order to do that, I changed the firmware of the CB2S for
-ESPhome, which also required to reverse engineer the connections of the relay, the button
-and the LED.
-
-After some fiddling with the multi-tester and some trying, I determined these are the
-connections of the CB2S module:
+After some experimentation with a multimeter, I determined the following connections for the CB2S module:
 
 ~~~
 RX1 (P11) -> Switch S1
@@ -28,9 +22,9 @@ P7 (P7)   -> Relay 2
 P6 (P6)   -> Relay 1
 ~~~
 
-## Generating ESPhome firmware
+## Generating ESPHome Firmware
 
-This can be done with the ESPhome Dashboard, one way is running this in Docker:
+This can be done using the **ESPHome Dashboard**. One way to run it is via Docker:
 
 ~~~
 docker run --rm --detach --name esphome \
@@ -38,12 +32,12 @@ docker run --rm --detach --name esphome \
   --net=host esphome/esphome
 ~~~
 
-Then you can access the dashboard using Google Chrome at http://localhost:6052
+You can then access the dashboard using Google Chrome at [http://localhost:6052](http://localhost:6052).
 
-Create a new BK72XX device and select CB2S as the board. Then replace the default
-template with the following YAML code:
+1. Create a new **BK72XX** device and select **CB2S** as the board.
+2. Replace the default template with the following YAML code:
 
-~~~
+```yaml
 esphome:
   name: demasled-domo18a2
   friendly_name: demasled_domo18a2
@@ -72,7 +66,7 @@ wifi:
     subnet: 255.255.255.0
     dns1: 192.168.0.1
 
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  # Enable fallback hotspot (captive portal) in case Wi-Fi connection fails
   ap:
     ssid: "Demasled-Domo18A2"
     password: "ez1XXXXXXef65"
@@ -131,54 +125,50 @@ status_led:
   pin:
     number: P24
     inverted: true
-~~~
+```
 
-Then choose Install, Manual download, finally select UF2 Package format and save to local disk.
+3. Choose **Install**, then **Manual Download**, and finally select **UF2 Package Format** to save the firmware to your local disk.
 
-## Flashing the generated firmware
+## Flashing the Generated Firmware
 
-This step requires preparing the CB2S to be flashed and installing the flashing tool.
+This step requires preparing the CB2S for flashing and installing the flashing tool.
 
-### Hardware preparation
+### Hardware Preparation
 
-A few basic hardware tools are required:
+You will need the following tools:
 
 - USB-TTL adapter
 - Soldering iron
-- some cables
-- a multi-tester
+- Some cables
+- A multimeter
 
-Under REFERENCES below there is a link to the CB2S datasheet.
+Refer to the **CB2S datasheet** (linked under **REFERENCES** below) for details.
 
-Unfortunately, in this case, some of the components connected to the RX1 and/or TX1 pins make it impossible to read or write the firmware. I did not find a way to flash without removing the CB2S module from the main board. With patience, some flux and desoldering wick it is possible to desolder it.
+Unfortunately, some components connected to the RX1 and/or TX1 pins prevent reading or writing the firmware. I was unable to flash the firmware without removing the CB2S module from the main board. With patience, flux, and desoldering wick, it is possible to desolder it.
 
-Another problem that I encountered was that the silkscreen on my CB2S was wrong, the pins where labeled "3V3","GND","RX2","TX1","P24","P26" from right to left, they should be labelled in that order but from left to right. This cost me a few hours of head banging till I noticed in the datasheet that the order was inverted, then I followed the output of the AMS117 regulator with the multitester and to my surprise I corroborated the error in the silkscreen. Later I found a couple of references to this problem on the Internet.
- 
-The first step requires soldering temporary wires from the WB2S to a USB-TTL adapter. Only five wires are
-needed: pins RX1, TX1, CEN, GND and 3V3. RX1 from the CB2S whould go to Tx on the TTL adapter, 
-likewise, TX1 should go to Rx on the other end. 
+Another issue I encountered was an error in the silkscreen on my CB2S. The pins were labeled **"3V3", "GND", "RX2", "TX1", "P24", "P26"** from right to left, but they should have been labeled in that order from left to right. This caused several hours of frustration until I noticed the discrepancy in the datasheet. Using a multimeter, I confirmed the error by tracing the output of the AMS117 regulator. I later found references to this issue online.
 
-3V3 should go to 3.3V (Datasheet suggests to use a separate power supply as the TTL 
-adapter may not suffice, but I had no problem whith mine). 
+The first step involves soldering temporary wires from the CB2S to a USB-TTL adapter. Only five wires are needed: **RX1**, **TX1**, **CEN**, **GND**, and **3V3**. Connect **RX1** on the CB2S to **TX** on the TTL adapter, and **TX1** on the CB2S to **RX** on the TTL adapter. 
 
-Obviously, GND from WB2S should go to GND on the TTL adapter.
+- **3V3** should connect to **3.3V** (the datasheet recommends using a separate power supply, as the TTL adapter may not provide sufficient power, but I had no issues with mine).
+- **GND** on the CB2S should connect to **GND** on the TTL adapter.
+- **CEN** should be temporarily connected to **GND** while the flashing tool attempts to access the module, putting the CB2S into flashing mode.
 
-CEN should to GND temporarily while the flashing tool is trying to access the module in order to put the CB2S in 
-flashing mode.
+### Software Flashing Tool
 
-### Software flashing tool
+Install the flashing tool:
 
 ~~~
 pip install ltchiptool
 ~~~
 
-To read (download) firmware from the chip:
+To read (download) the firmware from the chip:
 
 ~~~
 ltchiptool flash read BK7231N demasled_original_firmware.bin
 ~~~
 
-Once we have the original firmware, we can use an ltchiptool plugin to analize it and generate a ESPhome-compatible YAML with all connections and pins from the original firmware, a real life saver!
+Once you have the original firmware, you can use an **ltchiptool plugin** to analyze it and generate an ESPHome-compatible YAML file with all the connections and pins from the original firmware. This is a huge time-saver!
 
 To install the plugin:
 
@@ -186,24 +176,23 @@ To install the plugin:
 sudo pip3 install upk2esphome
 ~~~
 
-To generate the ESPhome YAML:
+To generate the ESPHome YAML:
 
 ~~~
 ltchiptool plugin upk2esphome firmware demasled_original_firmware.bin
 ~~~
 
-To write (upload, flash) new firmware to the chip:
+To write (upload/flash) the new firmware to the chip:
 
 ~~~
 ltchiptool flash write demasled.uf2
 ~~~
 
-Once sucessfully flashed, confirm that the device connects to the WiFi network, turn off, desolder the five temporary cables, install the CB2S again in the device and everything should be working.
+Once the firmware is successfully flashed, confirm that the device connects to your Wi-Fi network. Power it off, desolder the five temporary cables, reinstall the CB2S in the device, and everything should work as expected.
 
 ### REFERENCES
 
-https://developer.tuya.com/en/docs/iot/cb2s-module-datasheet?id=Kafgfsa2aaypq
+- [CB2S Module Datasheet](https://developer.tuya.com/en/docs/iot/cb2s-module-datasheet?id=Kafgfsa2aaypq)
+- [LibreTiny Documentation](https://docs.libretiny.eu/)
+- [Helpful YouTube Tutorial](https://youtu.be/t0o8nMbqOSA)
 
-https://docs.libretiny.eu/
-
-https://youtu.be/t0o8nMbqOSA
